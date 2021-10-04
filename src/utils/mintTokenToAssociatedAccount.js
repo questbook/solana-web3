@@ -94,7 +94,6 @@ async function mintToken({
   }) {
     let transaction = new Transaction();
     let signers = [mintOwner];
-    console.log(mintOwner)
       transaction.add(
         mintTo({
   
