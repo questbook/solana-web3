@@ -5,6 +5,7 @@ import { createNewMintAuthority } from './utils/createNewMintAuthority';
 import { useEffect, useState } from 'react';
 import { mintTokenToAssociatedAccount } from './utils/mintTokenToAssociatedAccount';
 import { transferCustomToken } from './utils/transferCustomToken';
+import { createAssociatedAccountFromMintKeyAndMint } from './utils/createAssociatedAccountFromMintKeyAndMint';
 const NETWORK = web3.clusterApiUrl("devnet");
 const connection = new Connection(NETWORK);
 const decimals = 9
@@ -15,6 +16,7 @@ function App() {
   const [providerPubKey, setProviderPub] = useState()
   const [mintSignature, setMintTransaction] = useState()
   const [tokenSignature, setTokenTransaction] = useState()
+  const [tokenSignatureAirdrop , setAirdropTransaction] = useState()
 
   const mintNewToken = async () =>{
     if(provider && !provider.isConnected){
@@ -56,6 +58,19 @@ const transferTokenToAssociateAccountHandler = async () =>{
     }
 }
 
+const airdropToUserWallet = async () =>{
+  try{
+    const tokensToAirdrop = 1
+    const mintPubkey = 'Bw94Agu3j5bT89ZnXPAgvPdC5gWVVLxQpud85QZPv1Eb' // mintKey of the token to be minted
+    const ownerPubkey = '4deyFHL6LG6NYvceo7q2t9Bz66jSjrg8A1BxJH1wAgie' //receiver's Solana wallet address
+    
+    const transactionSignature = await createAssociatedAccountFromMintKeyAndMint(connection, provider, new PublicKey(mintPubkey), new PublicKey(ownerPubkey),"",tokensToAirdrop)
+    setAirdropTransaction(transactionSignature.transactionSignature)
+  }catch(err){
+    console.log(err)
+  }
+}
+
 const connectToWallet = () =>{
   if(!provider && window.solana){
     setProvider(window.solana)
@@ -93,11 +108,12 @@ const connectToWallet = () =>{
   return (
     <div className="App">
       <header className="App-header">
-          {/* <button onClick={mintNewToken}>Create new token</button>
-           */}
+          
            <button onClick={connectToWallet}> {providerPubKey ? 'Connected' : 'Connect'} to wallet {providerPubKey ? (providerPubKey).toBase58() : ""}</button>
+           {/* <button onClick={mintNewToken}>Create new token</button>
            <button onClick={mintTokenToAssociateAccountHandler}> {mintSignature ? `Minted new token, signature: ${mintSignature}`: 'Mint New Token'} </button>
-           <button onClick={transferTokenToAssociateAccountHandler}> {tokenSignature ? `Token transferred, signature: ${tokenSignature}`:'Transfer Token' } </button>
+           <button onClick={transferTokenToAssociateAccountHandler}> {tokenSignature ? `Token transferred, signature: ${tokenSignature}`:'Transfer Token' } </button> */}
+           <button onClick={airdropToUserWallet}> {tokenSignatureAirdrop ? `Token airdropped, signature: ${tokenSignatureAirdrop}`:'Airdrop Token' } </button>
       </header>
     </div>
   );
