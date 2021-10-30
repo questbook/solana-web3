@@ -6,6 +6,12 @@ import { useEffect, useState } from 'react';
 import { mintTokenToAssociatedAccount } from './utils/mintTokenToAssociatedAccount';
 import { transferCustomToken } from './utils/transferCustomToken';
 import { createAssociatedAccountFromMintKeyAndMint } from './utils/createAssociatedAccountFromMintKeyAndMint';
+import nftImage from './nftImage.png'
+import { Creator, dataURLtoFile, mintNFT } from './utils/nftCreation';
+import domToImage from 'dom-to-image';
+import { programIds } from './utils/programIds';
+import { burn } from './utils/nftBurn';
+
 const NETWORK = web3.clusterApiUrl("devnet");
 const connection = new Connection(NETWORK);
 const decimals = 9
@@ -17,6 +23,8 @@ function App() {
   const [mintSignature, setMintTransaction] = useState()
   const [tokenSignature, setTokenTransaction] = useState()
   const [tokenSignatureAirdrop , setAirdropTransaction] = useState()
+  const [nftDetails, setNftDetails] = useState({})
+  const [nftBurnSignature, setNftBurnSignature] = useState()
 
   const mintNewToken = async () =>{
     if(provider && !provider.isConnected){
@@ -71,6 +79,75 @@ const airdropToUserWallet = async () =>{
   }
 }
 
+const convertDOMtoBase64 = async () => {
+  const node = document.getElementById('nftImage');
+  return domToImage.toPng(node);
+};
+
+
+const mintNewNFT = async () =>{
+  try{
+    const img = await convertDOMtoBase64();
+    const templateImage = dataURLtoFile(img, 'My_NFT.png');
+    const ownerPublicKey = new PublicKey(provider.publicKey).toBase58();
+    const selfCreator = new Creator({
+      address: ownerPublicKey,
+      verified: true,
+      share: 100,
+    });
+    const metadata = {
+      name: `SOLG_NFT`,
+      symbol: 'MNFT',
+      creators: [selfCreator],
+      description: '',
+      sellerFeeBasisPoints: 0,
+      image: templateImage.name,
+      animation_url: '',
+      external_url: '',
+      properties: {
+        files: [templateImage],
+        category: 'image',
+      },
+    };
+
+    const _nft = await mintNFT(
+      connection,
+      provider,
+      {},
+      [templateImage],
+      metadata,
+      1000000000
+    );
+    setNftDetails(_nft)
+  }catch(err){
+    console.log(err)
+  }
+}
+
+
+const burnNFT = async () =>{
+  const account = new PublicKey(nftDetails.account); //account address where the NFT is being minted
+    const owner = provider;
+    const multiSigners = [];
+    const amount = 1;
+    const connectionParam = connection;
+    const programId = programIds.token; //second wallet in sol chain
+    const publicKey = new PublicKey( nftDetails.mintKey); //nftMintKey you will receive while creating the NFT
+    const payer = provider;
+    const burnResult = await burn(
+      account,
+      owner,
+      multiSigners,
+      amount,
+      connectionParam,
+      programId,
+      publicKey,
+      payer
+    );
+    setNftBurnSignature(burnResult)
+}
+
+
 const connectToWallet = () =>{
   if(!provider && window.solana){
     setProvider(window.solana)
@@ -112,8 +189,13 @@ const connectToWallet = () =>{
            <button onClick={connectToWallet}> {providerPubKey ? 'Connected' : 'Connect'} to wallet {providerPubKey ? (providerPubKey).toBase58() : ""}</button>
            {/* <button onClick={mintNewToken}>Create new token</button>
            <button onClick={mintTokenToAssociateAccountHandler}> {mintSignature ? `Minted new token, signature: ${mintSignature}`: 'Mint New Token'} </button>
-           <button onClick={transferTokenToAssociateAccountHandler}> {tokenSignature ? `Token transferred, signature: ${tokenSignature}`:'Transfer Token' } </button> */}
-           <button onClick={airdropToUserWallet}> {tokenSignatureAirdrop ? `Token airdropped, signature: ${tokenSignatureAirdrop}`:'Airdrop Token' } </button>
+           <button onClick={transferTokenToAssociateAccountHandler}> {tokenSignature ? `Token transferred, signature: ${tokenSignature}`:'Transfer Token' } </button> 
+           <button onClick={airdropToUserWallet}> {tokenSignatureAirdrop ? `Token airdropped, signature: ${tokenSignatureAirdrop}`:'Airdrop Token' } </button>*/}
+           
+           <br></br>
+           <img src={nftImage} style={{width:"200px"}} id="nftImage"></img>
+          <button onClick={mintNewNFT}> {nftDetails && nftDetails.mintKey ? `NFT created, mintkey: ${nftDetails.mintKey}`:'Create NFT' } </button>
+          <button onClick={burnNFT}> {nftBurnSignature ? `NFT burnt, signature: ${nftBurnSignature}`:'Burn NFT' } </button>
       </header>
     </div>
   );
