@@ -11,6 +11,7 @@ import { Creator, dataURLtoFile, mintNFT } from './utils/nftCreation';
 import domToImage from 'dom-to-image';
 import { programIds } from './utils/programIds';
 import { burn } from './utils/nftBurn';
+import { stakeSOL } from './utils/stakeSOL';
 
 const NETWORK = web3.clusterApiUrl("devnet");
 const connection = new Connection(NETWORK);
@@ -25,6 +26,8 @@ function App() {
   const [tokenSignatureAirdrop , setAirdropTransaction] = useState()
   const [nftDetails, setNftDetails] = useState({})
   const [nftBurnSignature, setNftBurnSignature] = useState()
+
+  const [stakeSOLDetails, setStakeSOLDetails ] = useState({})
 
   const mintNewToken = async () =>{
     if(provider && !provider.isConnected){
@@ -148,6 +151,19 @@ const burnNFT = async () =>{
 }
 
 
+/**
+ * Stake SOL function invocation
+ */
+const stakeSOLHandler = async () => {
+  try{
+      const totalSolToStake = 1 * web3.LAMPORTS_PER_SOL; // in SOL
+      const result = await stakeSOL(totalSolToStake, provider, connection)
+      setStakeSOLDetails(result)
+  }catch(err){
+    console.log(err,'---stake error---')
+  }
+}
+
 const connectToWallet = () =>{
   if(!provider && window.solana){
     setProvider(window.solana)
@@ -192,10 +208,11 @@ const connectToWallet = () =>{
            <button onClick={transferTokenToAssociateAccountHandler}> {tokenSignature ? `Token transferred, signature: ${tokenSignature}`:'Transfer Token' } </button> 
            <button onClick={airdropToUserWallet}> {tokenSignatureAirdrop ? `Token airdropped, signature: ${tokenSignatureAirdrop}`:'Airdrop Token' } </button>*/}
            
-           <br></br>
+           {/* <br></br>
            <img src={nftImage} style={{width:"200px"}} id="nftImage"></img>
           <button onClick={mintNewNFT}> {nftDetails && nftDetails.mintKey ? `NFT created, mintkey: ${nftDetails.mintKey}`:'Create NFT' } </button>
-          <button onClick={burnNFT}> {nftBurnSignature ? `NFT burnt, signature: ${nftBurnSignature}`:'Burn NFT' } </button>
+          <button onClick={burnNFT}> {nftBurnSignature ? `NFT burnt, signature: ${nftBurnSignature}`:'Burn NFT' } </button> */}
+          <button onClick={stakeSOLHandler}> {stakeSOLDetails && stakeSOLDetails.newStakingAccountPubKey? `Staked SOL acccount: ${stakeSOLDetails.newStakingAccountPubKey}` : `Stake SOL` } </button>
       </header>
     </div>
   );
